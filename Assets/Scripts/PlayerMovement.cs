@@ -2,33 +2,39 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
 {
-    public Rigidbody2D rigidbody;
-    public float speed;
-    public float acceleration;
+    private Rigidbody2D _rigidbody;
+    [SerializeField] private float _speed;
+    [SerializeField] private float _acceleration;
 
-    public enum movementType
+    public enum MovementType
     {
         oldMovement,
         newMovement,
         rbMovement,
     }
-    public movementType currentMovementType;
+    public MovementType currentMovementType;
+
+    private void Awake()
+    {
+        _rigidbody = GetComponent<Rigidbody2D>();
+    }
 
     private void Update()
     {
         switch (currentMovementType)
         {
-            case movementType.oldMovement: OldMovement(); break;
-            case movementType.newMovement: NewMovement(); break;
+            case MovementType.oldMovement: OldMovement(); break;
+            case MovementType.newMovement: NewMovement(); break;
         }
     }
 
     private void FixedUpdate()
     {
-        rigidbody.simulated = currentMovementType == movementType.rbMovement;
-        if (currentMovementType != movementType.rbMovement)
+        _rigidbody.simulated = currentMovementType == MovementType.rbMovement;
+        if (currentMovementType != MovementType.rbMovement)
             return;
 
         Vector2 movement = new Vector2
@@ -36,10 +42,10 @@ public class PlayerMovement : MonoBehaviour
             x = (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f),
             y = (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f),
         }.normalized;
-        rigidbody.velocity = Vector2.MoveTowards(rigidbody.velocity, movement * speed, acceleration * Time.deltaTime);
+        _rigidbody.velocity = Vector2.MoveTowards(_rigidbody.velocity, movement * _speed, _acceleration * Time.deltaTime);
 
-        if (rigidbody.velocity != Vector2.zero)
-            transform.right = rigidbody.velocity;
+        if (_rigidbody.velocity != Vector2.zero)
+            transform.right = _rigidbody.velocity;
     }
 
     private void OldMovement()
@@ -47,25 +53,25 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKey(KeyCode.W))
         {
             Vector2 position = transform.position;
-            position.y += speed * Time.deltaTime;
+            position.y += _speed * Time.deltaTime;
             transform.position = position;
         }
         if (Input.GetKey(KeyCode.S))
         {
             Vector2 position = transform.position;
-            position.y -= speed * Time.deltaTime;
+            position.y -= _speed * Time.deltaTime;
             transform.position = position;
         }
         if (Input.GetKey(KeyCode.D))
         {
             Vector2 position = transform.position;
-            position.x += speed * Time.deltaTime;
+            position.x += _speed * Time.deltaTime;
             transform.position = position;
         }
         if (Input.GetKey(KeyCode.A))
         {
             Vector2 position = transform.position;
-            position.x -= speed * Time.deltaTime;
+            position.x -= _speed * Time.deltaTime;
             transform.position = position;
         }
     }
@@ -75,7 +81,7 @@ public class PlayerMovement : MonoBehaviour
         float yAxis = Input.GetAxisRaw("Vertical");
         Vector2 move = new Vector2(xAxis, yAxis).normalized;
 
-        move *= speed * Time.deltaTime;
+        move *= _speed * Time.deltaTime;
         transform.position += (Vector3)move;
     }
 
