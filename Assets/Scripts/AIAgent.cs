@@ -7,11 +7,15 @@ public class AIAgent : MonoBehaviour
     [SerializeField] private Transform _target;
     [SerializeField] private float _baseSpeed;
     [SerializeField] private float _stopDistance;
+    [SerializeField] private float _chaseDistance;
 
     [SerializeField] private Vector2[] _waypoints;
     private int _currentWaypointGoalIndex;
 
-    private void Start()
+    private Vector2 _roamPosition;
+    private float _roamPositionChangeTimer;
+
+    private void Awake()
     {
         if (_waypoints.Length == 0)
         {
@@ -19,9 +23,15 @@ public class AIAgent : MonoBehaviour
             for (int i = 0; i < _waypoints.Length; i++)
                 _waypoints[i] = transform.position + (Vector3)(Random.insideUnitCircle * Random.Range(2f, 12f));
         }
+        
     }
 
-    private void Update()
+    private void Start()
+    {
+        _currentWaypointGoalIndex = FindClosestWaypoint();
+    }
+
+    public void Partrol()
     {
         MoveTowardsPosition(_waypoints[_currentWaypointGoalIndex]);
         if (((Vector3)_waypoints[_currentWaypointGoalIndex] - transform.position).magnitude <= _stopDistance)
@@ -31,10 +41,69 @@ public class AIAgent : MonoBehaviour
                 _currentWaypointGoalIndex = 0;
         }
     }
+    public void ChaseTarget()
+    {
+        MoveTowardsPosition(_target.position);
+    }
+    public void Roam(float repositionTimeRangeMin, float repositionTimeRangeMax, float speedScale)
+    {
+        _roamPositionChangeTimer -= Time.deltaTime;
+        if (_roamPositionChangeTimer <= 0f)
+        {
+            _roamPosition = transform.position + new Vector3(Random.Range(-5f, 5f), Random.Range(-5f, 5f));
+            _roamPositionChangeTimer += Random.Range(repositionTimeRangeMin, repositionTimeRangeMax);
+        }
+        MoveTowardsPosition(_roamPosition, speedScale);
+    }
+    public void Roam(float repositionTimeRangeMin, float repositionTimeRangeMax)
+    {
+        Roam(repositionTimeRangeMin, repositionTimeRangeMax, 1f);
+    }
+    public void StopRoaming()
+    {
+        _currentWaypointGoalIndex = FindClosestWaypoint();
+    }
 
+    private void MoveTowardsPosition(Vector3 goal, float speedScale)
+    {
+        transform.position = Vector3.MoveTowards(transform.position, goal, _baseSpeed * speedScale * Time.deltaTime);
+    }
     private void MoveTowardsPosition(Vector3 goal)
     {
-        transform.position = Vector3.MoveTowards(transform.position, goal, _baseSpeed * Time.deltaTime);
+        MoveTowardsPosition(goal, 1f);
+    }
+
+    public bool IsTargetInRange()
+    {
+        if (_target == null)
+            return false;
+        return Vector2.Distance(transform.position, _target.position) <= _chaseDistance;
+    }
+
+    public int FindClosestWaypoint()
+    {
+        return FindClosestWaypoint(transform.position);
+    }
+    public int FindClosestWaypoint(Vector2 position)
+    {
+        if (_waypoints.Length == 0)
+        {
+            Debug.LogError("There are no waypoints to find the closest to");
+            return -1;
+        }
+
+        float smallestDistance = float.MaxValue;
+        int smallestDistanceWaypoint = -1;
+        for (int i = 0; i < _waypoints.Length; i++)
+        {
+            float distance = Vector3.Distance(transform.position, _waypoints[i]);
+            if (distance < smallestDistance)
+            {
+                smallestDistance = distance;
+                smallestDistanceWaypoint = i;
+            }
+        }
+        return smallestDistanceWaypoint;
     }
 
     private void OnDrawGizmosSelected()
